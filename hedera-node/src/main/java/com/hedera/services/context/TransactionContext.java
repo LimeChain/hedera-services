@@ -21,6 +21,7 @@ package com.hedera.services.context;
  */
 
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -34,6 +35,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.TransferList;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Defines a type that manages transaction-specific context for a node. (That is,
@@ -52,6 +54,14 @@ public interface TransactionContext {
 	 * @param consensusTime when the txn reached consensus.
 	 */
 	void resetFor(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember);
+
+	/**
+	 * Clear the context and processing history, initialize for a new consensus triggered txn.
+	 *
+	 * @param accessor the consensus platform txn to manage context of.
+	 * @param consensusTime when the txn reached consensus.
+	 */
+	void resetForTriggered(SignedTxnAccessor accessor, Instant consensusTime);
 
 	/**
 	 * Checks if the payer is known to have an active signature (that is, whether
@@ -136,6 +146,14 @@ public interface TransactionContext {
 	 * @return accessor for the current txn.
 	 */
 	PlatformTxnAccessor accessor();
+
+	/**
+	 * Gets an accessor to the triggered consensus {@link SignedTxnAccessor}
+	 * currently being processed.
+	 *
+	 * @return accessor for the current txn.
+	 */
+	SignedTxnAccessor scoppedAccessor();
 
 	/**
 	 * Set a new status for the current txn's processing.
@@ -229,4 +247,16 @@ public interface TransactionContext {
 	 * @param newTotalTokenSupply
 	 */
 	void setNewTotalSupply(long newTotalTokenSupply);
+
+
+	/**
+	 * todo:
+	 */
+	void trigger(SignedTxnAccessor accessor);
+
+
+	/**
+	 * todo:
+	 */
+	List<SignedTxnAccessor> triggeredTxns();
 }

@@ -32,6 +32,7 @@ import com.hedera.services.state.logic.ServicesTxnManager;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -45,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
+import java.util.List;
 
 import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
 import static com.hedera.services.keys.HederaKeyActivation.otherPartySigsAreActive;
@@ -96,6 +98,8 @@ public class AwareProcessLogic implements ProcessLogic {
 	private final ServicesTxnManager txnManager = new ServicesTxnManager(
 			this::processTxnInCtx,
 			this::addRecordToStream,
+			this::processScopedTxnInCtx,
+			this::addScopedRecordToStream,
 			this::warnOf);
 	private final ServicesContext ctx;
 
@@ -115,6 +119,12 @@ public class AwareProcessLogic implements ProcessLogic {
 				return;
 			}
 			txnManager.process(accessor, consensusTime, submittingMember, ctx);
+
+			List<SignedTxnAccessor> scopedAccessors = ctx.txnCtx().triggeredTxns();
+			var i = ctx.txnCtx().triggeredTxns().size();
+			for (SignedTxnAccessor scopedAccessor : scopedAccessors) {
+				txnManager.processValid(scopedAccessor, consensusTime.minusNanos(i--), ctx);
+			}
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		}
@@ -147,6 +157,10 @@ public class AwareProcessLogic implements ProcessLogic {
 		doProcess(ctx.txnCtx().accessor(), ctx.txnCtx().consensusTime());
 	}
 
+	private void processScopedTxnInCtx() {
+		doScopedProcess(ctx.txnCtx().scoppedAccessor(), ctx.txnCtx().consensusTime());
+	}
+
 	private void warnOf(Exception e, String context) {
 		String tpl = "Possibly CATASTROPHIC failure in {} :: {} ==>> {} ==>>";
 		try {
@@ -162,9 +176,43 @@ public class AwareProcessLogic implements ProcessLogic {
 		}
 	}
 
-	private void addRecordToStream() {
+	private void addScopedRecordToStream() {
 		var finalRecord = ctx.recordsHistorian().lastCreatedRecord().get();
 		addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
+	}
+
+	private void addRecordToStream() {
+		var finalRecord = ctx.recordsHistorian().lastCreatedRecord().get();
+		if (ctx.txnCtx().triggeredTxns().size() > 0) {
+			addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime()
+					.minusNanos(ctx.txnCtx().triggeredTxns().size()));
+			return;
+		}
+		addForStreaming(ctx.txnCtx().accessor().getSignedTxn(), finalRecord, ctx.txnCtx().consensusTime());
+	}
+
+	private void doScopedProcess(SignedTxnAccessor scopedAccessor, Instant consensusTime) {
+		/* Side-effects of advancing data-driven clock to consensus time. */
+		updateMidnightRatesIfAppropriateAt(consensusTime);
+		ctx.updateConsensusTimeOfLastHandledTxn(consensusTime);
+
+		if (ctx.issEventInfo().status() == ONGOING_ISS) {
+			var resetPeriod = ctx.properties().getIntProperty("iss.reset.periodSecs");
+			var resetTime = ctx.issEventInfo().consensusTimeOfRecentAlert().get().plus(resetPeriod, SECONDS);
+			if (consensusTime.isAfter(resetTime)) {
+				ctx.issEventInfo().relax();
+			}
+		}
+
+		FeeObject fee = ctx.fees().computeFee(scopedAccessor, ctx.txnCtx().activePayerKey(), ctx.currentView());
+
+		var chargingOutcome = ctx.txnChargingPolicy().apply(ctx.charging(), fee);
+		if (chargingOutcome != OK) {
+			ctx.txnCtx().setStatus(chargingOutcome);
+			return;
+		}
+
+		process(scopedAccessor, consensusTime);
 	}
 
 	private void doProcess(PlatformTxnAccessor accessor, Instant consensusTime) {
@@ -219,16 +267,20 @@ public class AwareProcessLogic implements ProcessLogic {
 			return;
 		}
 
-		var sysAuthStatus = ctx.systemOpPolicies().check(accessor).asStatus();
+		process(accessor, consensusTime);
+	}
+
+	private void process(SignedTxnAccessor scopedAccessor, Instant consensusTime) {
+		var sysAuthStatus = ctx.systemOpPolicies().check(scopedAccessor).asStatus();
 		if (sysAuthStatus != OK) {
 			ctx.txnCtx().setStatus(sysAuthStatus);
 			return;
 		}
 
-		var transitionLogic = ctx.transitionLogic().lookupFor(accessor.getFunction(), accessor.getTxn());
+		var transitionLogic = ctx.transitionLogic().lookupFor(scopedAccessor.getFunction(), scopedAccessor.getTxn());
 		ResponseCodeEnum opValidity = transitionLogic.isPresent()
-				? transitionLogic.get().syntaxCheck().apply(accessor.getTxn())
-				: TransactionValidationUtils.validateTxSpecificBody(accessor.getTxn(), ctx.validator());
+				? transitionLogic.get().syntaxCheck().apply(scopedAccessor.getTxn())
+				: TransactionValidationUtils.validateTxSpecificBody(scopedAccessor.getTxn(), ctx.validator());
 
 		if (opValidity != OK) {
 			ctx.txnCtx().setStatus(opValidity);
@@ -238,15 +290,15 @@ public class AwareProcessLogic implements ProcessLogic {
 		if (transitionLogic.isPresent()) {
 			transitionLogic.get().doStateTransition();
 		} else {
-			TransactionRecord record = processTransaction(accessor.getTxn(), consensusTime);
+			TransactionRecord record = processTransaction(scopedAccessor.getTxn(), consensusTime);
 			if (record != null && record.isInitialized()) {
 				mapLegacyRecordToTxnCtx(record);
 			} else {
-				log.warn("Legacy process returned null record for {}!", accessor.getTxn());
+				log.warn("Legacy process returned null record for {}!", scopedAccessor.getTxn());
 			}
 		}
 
-		ctx.opCounters().countHandled(accessor.getFunction());
+		ctx.opCounters().countHandled(scopedAccessor.getFunction());
 	}
 
 	private boolean hasActivePayerSig(PlatformTxnAccessor accessor) {

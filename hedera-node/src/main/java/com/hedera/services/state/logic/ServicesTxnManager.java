@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.ServicesContext;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 
 import java.time.Instant;
 import java.util.function.BiConsumer;
@@ -31,16 +32,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 public class ServicesTxnManager {
 	private final Runnable scopedProcessing;
 	private final Runnable scopedRecordStreaming;
+	private final Runnable scopedValidProcessing;
+	private final Runnable scopedValidRecordStreaming;
 	private final BiConsumer<Exception, String> warning;
 
 	public ServicesTxnManager(
 			Runnable scopedProcessing,
 			Runnable scopedRecordStreaming,
+			Runnable scopedValidProcessing,
+			Runnable scopedValidRecordStreaming,
 			BiConsumer<Exception, String> warning
 	) {
 		this.warning = warning;
 		this.scopedProcessing = scopedProcessing;
 		this.scopedRecordStreaming = scopedRecordStreaming;
+		this.scopedValidProcessing = scopedValidProcessing;
+		this.scopedValidRecordStreaming = scopedValidRecordStreaming;
 	}
 
 	private boolean createdStreamableRecord;
@@ -68,6 +75,26 @@ public class ServicesTxnManager {
 		}
 	}
 
+	public void processValid(
+			SignedTxnAccessor scopedAccessor,
+			Instant consensusTime,
+			ServicesContext ctx
+	) {
+		try {
+			ctx.ledger().begin();
+			ctx.txnCtx().resetForTriggered(scopedAccessor, consensusTime);
+			scopedValidProcessing.run();
+		} catch (Exception processFailure) {
+			warning.accept(processFailure, "txn valid processing");
+			ctx.txnCtx().setStatus(FAIL_INVALID);
+		} finally {
+			attemptCommit(scopedAccessor, consensusTime, ctx.txnCtx().submittingSwirldsMember(), ctx);
+			if (createdStreamableRecord) {
+				attemptValidRecordStreaming();
+			}
+		}
+	}
+
 	private void attemptRecordStreaming() {
 		try {
 			scopedRecordStreaming.run();
@@ -76,8 +103,16 @@ public class ServicesTxnManager {
 		}
 	}
 
+	private void attemptValidRecordStreaming() {
+		try {
+			scopedValidRecordStreaming.run();
+		} catch (Exception streamingFailure) {
+			warning.accept(streamingFailure, "record valid streaming");
+		}
+	}
+
 	private void attemptCommit(
-			PlatformTxnAccessor accessor,
+			SignedTxnAccessor accessor,
 			Instant consensusTime,
 			long submittingMember,
 			ServicesContext ctx
@@ -92,7 +127,7 @@ public class ServicesTxnManager {
 	}
 
 	private void attemptRollback(
-			PlatformTxnAccessor accessor,
+			SignedTxnAccessor accessor,
 			Instant consensusTime,
 			long submittingMember,
 			ServicesContext ctx

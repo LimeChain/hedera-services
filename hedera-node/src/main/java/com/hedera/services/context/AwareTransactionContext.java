@@ -23,6 +23,7 @@ package com.hedera.services.context;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.swirlds.common.Address;
@@ -38,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -63,6 +65,7 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	private final ServicesContext ctx;
+	private List<SignedTxnAccessor> triggeredTxns = new ArrayList<>();
 
 	private final Consumer<TransactionRecord.Builder> noopRecordConfig = ignore -> {};
 	private final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> {};
@@ -70,11 +73,13 @@ public class AwareTransactionContext implements TransactionContext {
 	private long submittingMember;
 	private long otherNonThresholdFees;
 	private boolean isPayerSigKnownActive;
+	private boolean isTriggeredTxn;
 	private Instant consensusTime;
 	private Timestamp consensusTimestamp;
 	private ByteString hash;
 	private ResponseCodeEnum statusSoFar;
 	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor scopedAccessor;
 	private Consumer<TransactionRecord.Builder> recordConfig = noopRecordConfig;
 	private Consumer<TransactionReceipt.Builder> receiptConfig = noopReceiptConfig;
 
@@ -90,6 +95,8 @@ public class AwareTransactionContext implements TransactionContext {
 		this.accessor = accessor;
 		this.consensusTime = consensusTime;
 		this.submittingMember = submittingMember;
+		this.triggeredTxns = new ArrayList<>();
+		this.isTriggeredTxn = false;
 
 		otherNonThresholdFees = 0L;
 		hash = accessor.getHash();
@@ -101,6 +108,25 @@ public class AwareTransactionContext implements TransactionContext {
 		hasComputedRecordSoFar = false;
 
 		ctx.charging().resetFor(accessor, submittingNodeAccount());
+		recordSoFar.clear();
+	}
+
+	@Override
+	public void resetForTriggered(SignedTxnAccessor scopedAccessor, Instant consensusTime) {
+		this.scopedAccessor = scopedAccessor;
+		this.consensusTime = consensusTime;
+		this.isTriggeredTxn = true;
+
+		otherNonThresholdFees = 0L;
+		hash = accessor.getHash();
+		statusSoFar = UNKNOWN;
+		consensusTimestamp = asTimestamp(consensusTime);
+		recordConfig = noopRecordConfig;
+		receiptConfig = noopReceiptConfig;
+		isPayerSigKnownActive = false;
+		hasComputedRecordSoFar = false;
+
+		ctx.charging().resetFor(scopedAccessor, submittingNodeAccount());
 		recordSoFar.clear();
 	}
 
@@ -217,6 +243,11 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
+	public SignedTxnAccessor scoppedAccessor() {
+		return scopedAccessor;
+	}
+
+	@Override
 	public void setStatus(ResponseCodeEnum status) {
 		statusSoFar = status;
 	}
@@ -239,6 +270,19 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public void setNewTotalSupply(long newTotalTokenSupply) {
 		receiptConfig = receipt -> receipt.setNewTotalSupply(newTotalTokenSupply);
+	}
+
+	@Override
+	public void trigger(SignedTxnAccessor scopedAccessor) {
+		if (isTriggeredTxn) {
+			throw new IllegalStateException("Unable to trigger txns to triggered txns");
+		}
+		this.triggeredTxns.add(scopedAccessor);
+	}
+
+	@Override
+	public List<SignedTxnAccessor> triggeredTxns() {
+		return triggeredTxns;
 	}
 
 	@Override

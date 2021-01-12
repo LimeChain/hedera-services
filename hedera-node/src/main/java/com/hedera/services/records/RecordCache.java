@@ -26,6 +26,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -81,7 +82,7 @@ public class RecordCache {
 
 	public void setFailInvalid(
 			AccountID effectivePayer,
-			PlatformTxnAccessor accessor,
+			SignedTxnAccessor accessor,
 			Instant consensusTimestamp,
 			long submittingMember
 	) {
