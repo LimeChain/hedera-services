@@ -215,4 +215,7 @@ enum ResponseCodeEnum {
   INVALID_SCHEDULE_PAYER_ID = 204; // The provided Scheduled Payer does not exist
   INVALID_SCHEDULE_ACCOUNT_ID = 205; // The Schedule Create Transaction TransactionID account does not exist
   INVALID_SCHEDULE_SIG_MAP_KEY = 206; // One of the provided Signature pub keys is not valid
+  SCHEDULE_EXECUTION_INVALID_PAYER_ACCOUNT_ID = 207; // The to-be-executed Scheduled Transaction's payer account id is invalid
+  SCHEDULE_EXECUTION_INVALID_ACCOUNT_ID = 208; // One of the accounts ids public keys needed for to-be-executed Scheduled Transaction is invalid
+  SCHEDULE_EXECUTION_ERROR = 209; // The to-be-executed Scheduled Transaction's accounts ids public keys retrieval has failed
 }
