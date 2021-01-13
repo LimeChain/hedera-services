@@ -65,6 +65,8 @@ message ContractID {
 message TransactionID {
     Timestamp transactionValidStart = 1; // The transaction is invalid if consensusTimestamp < transactionID.transactionStartValid
     AccountID accountID = 2; //The Account ID that paid for this transaction
+    bool schedule = 3; // todo:
+    uint32 nonce = 4; // todo:
 }
 
 /* An account, and the amount that it sends or receives during a cryptocurrency or token transfer. */

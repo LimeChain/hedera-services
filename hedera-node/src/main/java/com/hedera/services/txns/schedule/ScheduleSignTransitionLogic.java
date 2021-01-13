@@ -30,6 +30,7 @@ import com.hedera.services.sigs.verification.InvalidPayerAccountException;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.ScheduleChecks;
+import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -96,7 +97,8 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
         }
 
         if (readyForExecution(op.getSchedule())) {
-            // TODO: prepare child tx for execution
+            var transaction = prepareTransaction(store.get(op.getSchedule()));
+            txnCtx.trigger(new SignedTxnAccessor(transaction));
         }
 
         txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
