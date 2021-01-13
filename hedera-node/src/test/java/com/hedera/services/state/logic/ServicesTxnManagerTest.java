@@ -74,7 +74,8 @@ class ServicesTxnManagerTest {
 		recordStreaming = mock(Runnable.class);
 		warning = mock(BiConsumer.class);
 
-		subject = new ServicesTxnManager(processLogic, recordStreaming, warning);
+		// todo: update mocks
+		subject = new ServicesTxnManager(processLogic, recordStreaming, mock(Runnable.class), mock(Runnable.class), warning);
 
 		ledger = mock(HederaLedger.class);
 		txnCtx = mock(TransactionContext.class);

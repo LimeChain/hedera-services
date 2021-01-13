@@ -29,6 +29,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.HederaStore;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCode;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.swirlds.fcmap.FCMap;
@@ -230,5 +231,22 @@ public class HederaScheduleStore extends HederaStore implements ScheduleStore {
 		}
 
 		return Optional.empty();
+	}
+
+	@Override
+	public ResponseCodeEnum execute(ScheduleID id) {
+		var idRes = resolve(id);
+		if (idRes == MISSING_SCHEDULE) {
+			return INVALID_SCHEDULE_ID;
+		}
+
+		var schedule = get(id);
+		if (schedule.isDeleted()) {
+			return SCHEDULE_WAS_DELETED;
+		}
+
+		apply(id, DELETION);
+		txToEntityId.remove(new CompositeKey(Arrays.hashCode(schedule.transactionBody()), schedule.payer().toGrpcAccountId()));
+		return OK;
 	}
 }

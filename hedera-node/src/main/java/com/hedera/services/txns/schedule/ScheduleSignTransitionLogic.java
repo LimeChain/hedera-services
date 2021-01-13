@@ -99,6 +99,7 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
         if (readyForExecution(op.getSchedule())) {
             var transaction = prepareTransaction(store.get(op.getSchedule()));
             txnCtx.trigger(new SignedTxnAccessor(transaction));
+            outcome = store.execute(op.getSchedule());
         }
 
         txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);

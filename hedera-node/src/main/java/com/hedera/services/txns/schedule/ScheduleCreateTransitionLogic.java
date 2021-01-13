@@ -129,14 +129,16 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
             return;
         }
 
+
         if (readyForExecution(created)) {
             var transaction = prepareTransaction(store.get(created));
             txnCtx.trigger(new SignedTxnAccessor(transaction));
+            outcome = store.execute(created);
         }
 
         store.commitCreation();
         txnCtx.setCreated(created);
-        txnCtx.setStatus(SUCCESS);
+        txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);
     }
 
     private void abortWith(ResponseCodeEnum cause) {
