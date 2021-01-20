@@ -63,11 +63,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
@@ -147,6 +149,7 @@ public class ScheduleCreateTransitionLogicTest {
     public void followsHappyPath() {
         // given:
         givenValidToBeReadyForExecutionTxnCtx();
+        given(store.execute(eq(schedule))).willReturn(OK);
 
         // when:
         subject.doStateTransition();
@@ -165,13 +168,49 @@ public class ScheduleCreateTransitionLogicTest {
                 eq(schedule),
                 argThat(this::assertJKeySet));
         // and:
-        verify(store).get(eq(schedule));
+        verify(store, times(2)).get(eq(schedule));
         verify(ledger).exists(payer);
         verify(ledger).get(payer);
         verify(signingOrder).keysForOtherParties(innerTransactionBody, ScheduleReadyForExecution.PRE_HANDLE_SUMMARY_FACTORY);
         // and:
+        verify(txnCtx).trigger(any());
+        verify(store).execute(eq(schedule));
         verify(store).commitCreation();
         verify(txnCtx).setStatus(SUCCESS);
+    }
+
+    @Test
+    public void capturesFailingPrepareExecution() {
+        // given:
+        givenValidToBeReadyForExecutionTxnCtx();
+        given(store.execute(eq(schedule))).willReturn(FAIL_INVALID);
+
+        // when:
+        subject.doStateTransition();
+
+        // then:
+        verify(store).getScheduleID(transactionBody, payer);
+        // and:
+        verify(store).createProvisionally(
+                eq(transactionBody),
+                eq(payer),
+                eq(payer),
+                eq(RichInstant.fromJava(now)),
+                argThat((Optional<JKey> k) -> equalUpToDecodability(k.get(), jAdminKey.get())));
+        // and:
+        verify(store).addSigners(
+                eq(schedule),
+                argThat(this::assertJKeySet));
+        // and:
+        verify(store, times(2)).get(eq(schedule));
+        verify(ledger).exists(payer);
+        verify(ledger).get(payer);
+        verify(signingOrder).keysForOtherParties(innerTransactionBody, ScheduleReadyForExecution.PRE_HANDLE_SUMMARY_FACTORY);
+        // and:
+        verify(txnCtx).trigger(any());
+        verify(store).execute(eq(schedule));
+        verify(store, never()).commitCreation();
+        verify(txnCtx).setStatus(FAIL_INVALID);
     }
 
     @Test
@@ -388,6 +427,7 @@ public class ScheduleCreateTransitionLogicTest {
         given(store.addSigners(
                 eq(schedule),
                 argThat(jKeySet -> true))).willReturn(OK);
+        given(store.execute(eq(schedule))).willReturn(OK);
 
         // when:
         subject.doStateTransition();
@@ -406,10 +446,12 @@ public class ScheduleCreateTransitionLogicTest {
                 argThat(this::assertJKeySet));
         verify(store).commitCreation();
         // and:
-        verify(store).get(eq(schedule));
+        verify(store, times(2)).get(eq(schedule));
         verify(ledger).exists(payer);
         verify(ledger).get(payer);
         verify(signingOrder).keysForOtherParties(innerTransactionBody, ScheduleReadyForExecution.PRE_HANDLE_SUMMARY_FACTORY);
+        verify(txnCtx).trigger(any());
+        verify(store).execute(eq(schedule));
         // and:
         verify(txnCtx).setStatus(SUCCESS);
     }

@@ -20,6 +20,8 @@ package com.hedera.services.sigs;
  * ‍
  */
 
+import com.hedera.services.legacy.crypto.SignatureStatus;
+import com.hedera.services.legacy.crypto.SignatureStatusCode;
 import com.hedera.services.sigs.factories.BodySigningSigFactory;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.order.HederaSigningOrder;
@@ -32,9 +34,6 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.services.legacy.crypto.SignatureStatus;
-import com.hedera.services.legacy.crypto.SignatureStatusCode;
-import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import org.apache.logging.log4j.LogManager;
@@ -45,10 +44,10 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
 import static com.hedera.services.sigs.PlatformSigOps.createEd25519PlatformSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
 import static com.hedera.services.sigs.utils.StatusUtils.successFor;
-import static com.hedera.services.legacy.crypto.SignatureStatusCode.SUCCESS;
 
 public class Rationalization {
     private static final Logger log = LogManager.getLogger(Rationalization.class);

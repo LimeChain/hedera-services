@@ -20,6 +20,8 @@ package com.hedera.services.txns.schedule;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
@@ -29,9 +31,17 @@ import com.hedera.services.legacy.exception.InvalidKeysForPartiesException;
 import com.hedera.services.sigs.order.HederaSigningOrder;
 import com.hedera.services.sigs.order.SigStatusOrderResultFactory;
 import com.hedera.services.sigs.verification.InvalidPayerAccountException;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.utils.MiscUtils;
+import com.hedera.services.utils.TriggeredTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 
 import java.util.List;
 import java.util.Set;
@@ -46,14 +56,17 @@ public abstract class ScheduleReadyForExecution {
     private final HederaLedger ledger;
     protected final HederaSigningOrder signingOrder;
     protected final ScheduleStore store;
+    protected final TransactionContext txnCtx;
 
     protected ScheduleReadyForExecution(
             HederaLedger ledger,
             HederaSigningOrder signingOrder,
-            ScheduleStore store) {
+            ScheduleStore store,
+            TransactionContext context) {
         this.ledger = ledger;
         this.signingOrder = signingOrder;
         this.store = store;
+        this.txnCtx = context;
     }
 
     protected boolean readyForExecution(ScheduleID scheduleID) throws Exception {
@@ -118,5 +131,26 @@ public abstract class ScheduleReadyForExecution {
         }
 
         return false;
+    }
+
+    protected byte[] prepareTransaction(MerkleSchedule schedule) throws InvalidProtocolBufferException {
+        var transactionBody = TransactionBody.parseFrom(schedule.transactionBody());
+        var transactionId = TransactionID.newBuilder()
+                .setAccountID(schedule.schedulingAccount().toGrpcAccountId())
+                .setTransactionValidStart(MiscUtils.asTimestamp(schedule.schedulingTXValidStart().toJava()))
+                .setNonce(transactionBody.getTransactionID().getNonce())
+                .setScheduled(true)
+                .build();
+
+        return TransactionBody.newBuilder()
+                .mergeFrom(transactionBody)
+                .setTransactionID(transactionId)
+                .build().toByteArray();
+    }
+
+    protected ResponseCodeEnum processExecution(ScheduleID id, AccountID payer) throws InvalidProtocolBufferException {
+        var transaction = prepareTransaction(store.get(id));
+        txnCtx.trigger(new TriggeredTxnAccessor(transaction, payer, id));
+        return store.execute(id);
     }
 }

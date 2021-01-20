@@ -21,25 +21,42 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hederahashgraph.api.proto.java.*;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.Address;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
-import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
-import static com.hedera.services.utils.MiscUtils.readableTransferList;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
+
+import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
+import static com.hedera.services.state.merkle.MerkleEntityId.fromAccountId;
+import static com.hedera.services.utils.EntityIdUtils.accountParsedFromString;
+import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
+import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 /**
  * Implements a transaction context using infrastructure known to be
@@ -63,6 +80,7 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	private final ServicesContext ctx;
+	private TxnAccessor triggeredTxn = null;
 
 	private final Consumer<TransactionRecord.Builder> noopRecordConfig = ignore -> {};
 	private final Consumer<TransactionReceipt.Builder> noopReceiptConfig = ignore -> {};
@@ -74,7 +92,7 @@ public class AwareTransactionContext implements TransactionContext {
 	private Timestamp consensusTimestamp;
 	private ByteString hash;
 	private ResponseCodeEnum statusSoFar;
-	private PlatformTxnAccessor accessor;
+	private TxnAccessor accessor;
 	private Consumer<TransactionRecord.Builder> recordConfig = noopRecordConfig;
 	private Consumer<TransactionReceipt.Builder> receiptConfig = noopReceiptConfig;
 
@@ -86,10 +104,11 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void resetFor(PlatformTxnAccessor accessor, Instant consensusTime, long submittingMember) {
+	public void resetFor(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
 		this.accessor = accessor;
 		this.consensusTime = consensusTime;
 		this.submittingMember = submittingMember;
+		this.triggeredTxn = null;
 
 		otherNonThresholdFees = 0L;
 		hash = accessor.getHash();
@@ -152,6 +171,9 @@ public class AwareTransactionContext implements TransactionContext {
 				.setTransactionHash(hash)
 				.setConsensusTimestamp(consensusTimestamp)
 				.addAllTokenTransferLists(ctx.ledger().netTokenTransfersInTxn());
+		if (accessor.isTriggeredTxn()) {
+			recordSoFar.setScheduleRef(accessor.getScheduleRef());
+		}
 
 		recordConfig.accept(recordSoFar);
 		hasComputedRecordSoFar = true;
@@ -212,7 +234,7 @@ public class AwareTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public PlatformTxnAccessor accessor() {
+	public TxnAccessor accessor() {
 		return accessor;
 	}
 
@@ -287,5 +309,18 @@ public class AwareTransactionContext implements TransactionContext {
 	@Override
 	public void payerSigIsKnownActive() {
 		isPayerSigKnownActive = true;
+	}
+
+	@Override
+	public void trigger(TxnAccessor scopedAccessor) {
+		if (this.accessor().isTriggeredTxn()) {
+			throw new IllegalStateException("Unable to trigger txns in triggered txns");
+		}
+		this.triggeredTxn = scopedAccessor;
+	}
+
+	@Override
+	public TxnAccessor triggeredTxn() {
+		return triggeredTxn;
 	}
 }

@@ -25,6 +25,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -87,7 +88,7 @@ public interface OptionValidator {
 		return amount >= 0;
 	}
 
-	default ResponseCodeEnum chronologyStatus(SignedTxnAccessor accessor, Instant consensusTime) {
+	default ResponseCodeEnum chronologyStatus(TxnAccessor accessor, Instant consensusTime) {
 		return PureValidation.chronologyStatus(
 				consensusTime,
 				asCoercedInstant(accessor.getTxnId().getTransactionValidStart()),

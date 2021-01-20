@@ -62,6 +62,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitPlatform.class)
@@ -272,6 +273,7 @@ public class ScheduleSignTransitionLogicTest {
         givenValidTxnCtx();
         // and:
         given(store.addSigners(eq(schedule), argThat(jKeySet -> true))).willReturn(OK);
+        given(store.execute(eq(schedule))).willReturn(OK);
 
         // when:
         subject.doStateTransition();
@@ -279,10 +281,12 @@ public class ScheduleSignTransitionLogicTest {
         // then:
         verify(store).addSigners(eq(schedule), argThat(this::assertJKeySet));
         // and:
-        verify(store).get(eq(schedule));
+        verify(store, times(3)).get(eq(schedule));
         verify(ledger).exists(payerAccount.toGrpcAccountId());
         verify(ledger).get(payerAccount.toGrpcAccountId());
         verify(signingOrder).keysForOtherParties(innerTransactionBody, ScheduleReadyForExecution.PRE_HANDLE_SUMMARY_FACTORY);
+        verify(txnCtx).trigger(any());
+        verify(store).execute(eq(schedule));
         // and:
         verify(txnCtx).setStatus(SUCCESS);
     }

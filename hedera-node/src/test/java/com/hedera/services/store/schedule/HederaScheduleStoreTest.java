@@ -155,18 +155,6 @@ public class HederaScheduleStoreTest {
     }
 
     @Test
-    public void rejectsDeletionScheduleAlreadyDeleted() {
-        // given:
-        given(schedule.isDeleted()).willReturn(true);
-
-        // when:
-        var outcome = subject.delete(created);
-
-        // expect:
-        assertEquals(SCHEDULE_WAS_DELETED, outcome);
-    }
-
-    @Test
     public void successfulAddSigner() {
         // when:
         var signers = new HashSet<JKey>();
@@ -517,5 +505,53 @@ public class HederaScheduleStoreTest {
 
         // then:
         assertEquals(INVALID_SCHEDULE_ID, outcome);
+    }
+
+    @Test
+    public void rejectsExecutionMissingSchedule() {
+        // given:
+        given(schedules.containsKey(fromScheduleId(created))).willReturn(false);
+
+        // when:
+        var outcome = subject.execute(created);
+
+        // then:
+        assertEquals(INVALID_SCHEDULE_ID, outcome);
+    }
+
+    @Test
+    public void executesAsExpected() {
+        // given:
+        given(schedules.getForModify(fromScheduleId(created))).willReturn(schedule);
+
+        // when:
+        var outcome = subject.execute(created);
+
+        // then:
+        assertEquals(OK, outcome);
+    }
+
+    @Test
+    public void rejectsDeletionScheduleAlreadyDeleted() {
+        // given:
+        given(schedule.isDeleted()).willReturn(true);
+
+        // when:
+        var outcome = subject.delete(created);
+
+        // expect:
+        assertEquals(SCHEDULE_WAS_DELETED, outcome);
+    }
+
+    @Test
+    public void rejectsExecutionAlreadyDeleted() {
+        // given:
+        given(schedule.isDeleted()).willReturn(true);
+
+        // when:
+        var outcome = subject.execute(created);
+
+        // expect:
+        assertEquals(SCHEDULE_WAS_DELETED, outcome);
     }
 }

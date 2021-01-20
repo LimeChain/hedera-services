@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -132,7 +133,7 @@ class TxnFeeChargingPolicyTest {
 
 	private static class NoExemptions implements FeeExemptions {
 		@Override
-		public boolean hasExemptPayer(SignedTxnAccessor accessor) {
+		public boolean hasExemptPayer(TxnAccessor accessor) {
 			return false;
 		}
 	}

@@ -30,6 +30,8 @@ import com.hedera.services.sigs.verification.InvalidPayerAccountException;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.ScheduleChecks;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -56,15 +58,12 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
 
     private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-    TransactionContext txnCtx;
-
     public ScheduleSignTransitionLogic(
             HederaLedger ledger,
             HederaSigningOrder signingOrder,
             ScheduleStore store,
             TransactionContext txnCtx) {
-        super(ledger, signingOrder, store);
-        this.txnCtx = txnCtx;
+        super(ledger, signingOrder, store, txnCtx);
     }
 
     @Override
@@ -96,7 +95,7 @@ public class ScheduleSignTransitionLogic extends ScheduleReadyForExecution imple
         }
 
         if (readyForExecution(op.getSchedule())) {
-            // TODO: prepare child tx for execution
+            outcome = processExecution(op.getSchedule(), store.get(op.getSchedule()).payer().toGrpcAccountId());
         }
 
         txnCtx.setStatus((outcome == OK) ? SUCCESS : outcome);

@@ -31,6 +31,8 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.ScheduleChecks;
+import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TriggeredTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -60,15 +62,12 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 
     private final Function<TransactionBody, ResponseCodeEnum> SYNTAX_CHECK = this::validate;
 
-    private final TransactionContext txnCtx;
-
     public ScheduleCreateTransitionLogic(
             HederaLedger ledger,
             HederaSigningOrder signingOrder,
             ScheduleStore store,
             TransactionContext txnCtx) {
-        super(ledger, signingOrder, store);
-        this.txnCtx = txnCtx;
+        super(ledger, signingOrder, store, txnCtx);
     }
 
     @Override
@@ -129,7 +128,12 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
         }
 
         if (readyForExecution(created)) {
-            // TODO: prepare child tx for execution
+            outcome = processExecution(created, scheduledTXPayer);
+
+            if (outcome != OK) {
+                abortWith(outcome);
+                return;
+            }
         }
 
         store.commitCreation();

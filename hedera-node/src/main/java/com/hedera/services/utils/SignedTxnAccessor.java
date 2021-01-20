@@ -26,6 +26,7 @@ import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -40,7 +41,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
  *
  * @author Michael Tinker
  */
-public class SignedTxnAccessor {
+public class SignedTxnAccessor implements TxnAccessor {
 	private byte[] txnBytes;
 	private byte[] signedTxnBytes;
 	private Transaction signedTxn;
@@ -115,4 +116,13 @@ public class SignedTxnAccessor {
 	public ByteString getHash() {
 		return hash;
 	}
+
+	@Override
+	public boolean canTriggerTxn() {
+		return getTxn().hasScheduleCreation() || getTxn().hasScheduleSign();
+	}
+
+	public boolean isTriggeredTxn() { return false; }
+
+	public ScheduleID getScheduleRef() { return ScheduleID.getDefaultInstance(); }
 }

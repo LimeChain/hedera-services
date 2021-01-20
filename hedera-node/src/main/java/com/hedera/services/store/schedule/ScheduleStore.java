@@ -48,6 +48,7 @@ public interface ScheduleStore extends Store<ScheduleID, MerkleSchedule> {
 	ResponseCodeEnum addSigners(ScheduleID sID, Set<JKey> keys);
 
 	Optional<ScheduleID> getScheduleID(byte[] bodyBytes, AccountID scheduledTxPayer);
+	ResponseCodeEnum execute(ScheduleID id);
 
 	default ScheduleID resolve(ScheduleID id) {
 		return exists(id) ? id : MISSING_SCHEDULE;

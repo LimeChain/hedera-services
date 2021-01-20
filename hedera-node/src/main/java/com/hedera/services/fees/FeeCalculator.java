@@ -22,6 +22,7 @@ package com.hedera.services.fees;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -42,8 +43,8 @@ import java.util.Map;
 public interface FeeCalculator {
 	void init();
 
-	FeeObject computeFee(SignedTxnAccessor accessor, JKey payerKey, StateView view);
-	FeeObject estimateFee(SignedTxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
+	FeeObject computeFee(TxnAccessor accessor, JKey payerKey, StateView view);
+	FeeObject estimateFee(TxnAccessor accessor, JKey payerKey, StateView view, Timestamp at);
 	FeeObject estimatePayment(Query query, FeeData usagePrices, StateView view, Timestamp at, ResponseType type);
 	FeeObject computePayment(
 			Query query,
