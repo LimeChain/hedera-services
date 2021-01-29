@@ -66,7 +66,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_
 
 public class ScheduleCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateSpecs.class);
-	private final String[] DEFAULT_SIGNATORIES = new String[]{"signer1", "signer2", "signer3"};
 
 	public static void main(String... args) {
 		new ScheduleCreateSpecs().runSuiteSync();
@@ -190,7 +189,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given()
 				.when(
 						scheduleCreate("invalidPayer", cryptoCreate("secondary"))
-								.scheduledTXPayer("0.0.12")
+								.scheduledTXPayer("0.0.9999")
 								.hasKnownStatus(INVALID_SCHEDULE_PAYER_ID)
 
 				)
@@ -254,14 +253,14 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						cryptoCreate("receiver1"),
 						scheduleCreate("executedTX", txnBody)
 								.via("executedTX"),
-						scheduleSign("executedTX").withSignatories("sender", "receiver")
+						scheduleSign("executedTX").withSignatories("sender1", "receiver1")
 				)
 				.when(
 						scheduleCreate("secondTX", txnBody)
 								.via("secondTX")
 				)
 				.then(
-					ensureDifferentScheduledTXCreated("executedTX", "secondTX")
+						ensureDifferentScheduledTXCreated("executedTX", "secondTX")
 				);
 	}
 
@@ -489,10 +488,13 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec nestedScheduleSignFails() {
 		return defaultHapiSpec("NestedScheduleSignFails")
-				.given()
+				.given(
+						newKeyNamed("signer"),
+						scheduleCreate("inner", cryptoCreate("someAccount"))
+				)
 				.when(
-						scheduleCreate("first",
-								scheduleSign("second").withSignatories(DEFAULT_SIGNATORIES))
+						scheduleCreate("outer",
+								scheduleSign("inner").withSignatories("signer"))
 								.hasKnownStatus(UNSCHEDULABLE_TRANSACTION)
 				)
 				.then();
