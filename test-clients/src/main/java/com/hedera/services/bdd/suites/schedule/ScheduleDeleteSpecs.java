@@ -66,44 +66,23 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
         );
     }
 
-    private HapiApiSpec deletingExecutedFails() {
-        return defaultHapiSpec("DeletingExpiredFails")
-                .given(
-                        newKeyNamed("admin"),
-                        scheduleCreate("validScheduledTxn",
-                                cryptoCreate("newImmediate"))
-                                .adminKey("admin")
-                )
-                .when(
-                        scheduleDelete("validScheduledTxn")
-                                .signedBy("admin", DEFAULT_PAYER)
-                                .hasKnownStatus(SCHEDULE_WAS_DELETED)
-                )
-                .then(
-                        getScheduleInfo("validScheduledTxn")
-                                .logged()
-                );
-    }
-
     private HapiApiSpec followsHappyPath() {
         return defaultHapiSpec("FollowsHappyPath")
                 .given(
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
-                        newKeyNamed("someone"),
                         newKeyNamed("admin"),
                         scheduleCreate("validScheduledTxn",
-                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)).signedBy("someone"))
+                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
                                 .adminKey("admin")
                 )
                 .when(
                         scheduleDelete("validScheduledTxn")
-                                .signedBy("admin", DEFAULT_PAYER)
+                                .signedBy(DEFAULT_PAYER, "admin")
                                 .hasKnownStatus(SUCCESS)
                 )
                 .then(
-                        getScheduleInfo("validScheduledTxn")
-                                .logged()
+                        // TODO assert that it is deleted after deletion impl
                 );
     }
 
@@ -112,9 +91,8 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                 .given(
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
-                        newKeyNamed("someone"),
                         scheduleCreate("validScheduledTxn",
-                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)).signedBy("someone"))
+                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
                 )
                 .when(
                         scheduleDelete("validScheduledTxn")
@@ -131,9 +109,8 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                         newKeyNamed("non-admin-key"),
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
-                        newKeyNamed("someone"),
                         scheduleCreate("validScheduledTxn",
-                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)).signedBy("someone"))
+                                cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
                                 .adminKey("admin")
                 )
                 .when(
@@ -150,12 +127,9 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                 .given(
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
-                        newKeyNamed("someone"),
                         newKeyNamed("admin"),
-                        newKeyNamed("signer4"),
                         scheduleCreate("validScheduledTxn",
-                                    cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)).signedBy("someone")
-                                )
+                                    cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
                                 .adminKey("admin"),
                         scheduleDelete("validScheduledTxn")
                                 .signedBy("admin", DEFAULT_PAYER))
@@ -164,8 +138,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                                 .signedBy("admin", DEFAULT_PAYER)
                                 .hasKnownStatus(SCHEDULE_WAS_DELETED)
                 )
-                .then(
-                );
+                .then();
     }
 
     private HapiApiSpec deletingNonExistingFails() {
@@ -175,7 +148,22 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                         scheduleDelete("0.0.534")
                                 .hasKnownStatus(INVALID_SCHEDULE_ID)
                 )
-                .then(
-                );
+                .then();
+    }
+
+    private HapiApiSpec deletingExecutedFails() {
+        return defaultHapiSpec("DeletingExpiredFails")
+                .given(
+                        newKeyNamed("admin"),
+                        scheduleCreate("validScheduledTxn",
+                                cryptoCreate("newImmediate"))
+                                .adminKey("admin")
+                )
+                .when(
+                        scheduleDelete("validScheduledTxn")
+                                .signedBy("admin", DEFAULT_PAYER)
+                                .hasKnownStatus(SCHEDULE_WAS_DELETED)
+                )
+                .then();
     }
 }
