@@ -304,8 +304,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec scheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated() {
-		var txnBody = cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1));
-
 		return defaultHapiSpec("ScheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated")
 				.given(
 						updateScheduleExpiryTimeSecs,
@@ -399,7 +397,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec scheduledTXWithDifferentMemoAreNotIdempotentlyCreated() {
-		var txnBody = cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, GENESIS, 1));
 		return defaultHapiSpec("ScheduledTXWithDifferentMemoAreNotIdempotentlyCreated")
 				.given(
 						updateScheduleExpiryTimeSecs,
@@ -543,6 +540,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	private HapiApiSpec nestedScheduleSignFails() {
 		return defaultHapiSpec("NestedScheduleSignFails")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						newKeyNamed("signer"),
 						scheduleCreate("inner", cryptoCreate("someAccount"))
 				)
