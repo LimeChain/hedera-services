@@ -317,7 +317,7 @@ public class HapiSpecRegistry {
 		return get(name + "Kyc", Key.class);
 	}
 
-	public Long getTokenExpiry(String name) { return get(name + "Expiry", Long.class); }
+	public Long getExpiry(String name) { return get(name + "Expiry", Long.class); }
 
 	public boolean hasKey(String name) {
 		return hasVia(this::getKey, name);
@@ -588,7 +588,7 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean hasContractId(String name) {
-		return hasVia(this::getContractId, name);
+		return registry.containsKey(full(name, ContractID.class));
 	}
 
 	public void removeContractId(String name) {
@@ -714,6 +714,7 @@ public class HapiSpecRegistry {
 	private synchronized <T> T get(String name, Class<T> type) {
 		Object v = registry.get(full(name, type));
 		if (v == null) {
+			log.error("No such {} named '{}'!", type.getSimpleName(), name);
 			throw new RegistryNotFound("Missing " + type.getSimpleName() + " '" + name + "'!");
 		}
 		return type.cast(v);

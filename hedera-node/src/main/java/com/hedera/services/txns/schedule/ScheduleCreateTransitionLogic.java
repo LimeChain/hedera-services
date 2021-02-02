@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -34,10 +36,12 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.state.submerkle.RichInstant.fromGrpc;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.validation.ScheduleChecks.checkAdminKey;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
@@ -94,6 +98,7 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 					txBytes,
 					scheduledPayer,
 					txnCtx.activePayer(),
+					fromGrpc(txnCtx.accessor().getTxnId().getTransactionValidStart()),
 					fromJava(txnCtx.consensusTime()),
 					adminKeyFor(op),
 					Optional.of(op.getMemo()));
@@ -113,6 +118,8 @@ public class ScheduleCreateTransitionLogic extends ScheduleReadyForExecution imp
 
 		if (store.isCreationPending()) {
 			store.commitCreation();
+			var expiringEntity = new ExpiringEntity(EntityId.ofNullableScheduleId(scheduleId), store::expire, store.get(scheduleId).expiry());
+			txnCtx.addExpiringEntities(Collections.singletonList(expiringEntity));
 		}
 		var finalOutcome = OK;
 		if (signingOutcome.getRight()) {
