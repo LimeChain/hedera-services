@@ -70,17 +70,17 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						expiredBeforeSigning(),
-//						triggersUponAdditionalNeededSig(),
-//						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
-//						scheduleSigIrrelevantToSchedulingTxn(),
-//						overlappingKeysTreatedAsExpected(),
-//						retestsActivationOnSignWithEmptySigMap(),
-//						basicSignatureCollectionWorks(),
-//						addingSignaturesToExecutedTxFails(),
-//						addingSignaturesToNonExistingTxFails(),
-//						addingSignatureByNonRequiredSignerFails(),
-//						addingSignatureByNonRequiredSignerFails2(),
-//						triggersUponFinishingPayerSig()
+						triggersUponAdditionalNeededSig(),
+						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
+						scheduleSigIrrelevantToSchedulingTxn(),
+						overlappingKeysTreatedAsExpected(),
+						retestsActivationOnSignWithEmptySigMap(),
+						basicSignatureCollectionWorks(),
+						addingSignaturesToExecutedTxFails(),
+						addingSignaturesToNonExistingTxFails(),
+						addingSignatureByNonRequiredSignerFails(),
+						addingSignatureByNonRequiredSignerFails2(),
+						triggersUponFinishingPayerSig()
 				}
 		);
 	}
@@ -90,6 +90,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("BasicSignatureCollectionWorks")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						overriding("scheduling.whitelist", "CryptoTransfer"),
 						cryptoCreate("sender"),
 						cryptoCreate("receiver").receiverSigRequired(true),
@@ -109,10 +110,12 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("AddingSignatureByNonRequiredSignerFails")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						cryptoCreate("sender"),
 						cryptoCreate("receiver"),
 						newKeyNamed("somebody"),
 						newKeyNamed("somebodyelse"),
+						overriding("scheduling.whitelist", "CryptoTransfer"),
 						scheduleCreate("basicXfer", txnBody)
 				)
 				.when(
@@ -125,8 +128,9 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	private HapiApiSpec addingSignatureByNonRequiredSignerFails2() {
 		var txnBody = mintToken("tokenA", 50000000L);
 
-		return defaultHapiSpec("AddingSignatureByNonRequiredSignerFails")
+		return defaultHapiSpec("AddingSignatureByNonRequiredSignerFails2")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						overriding("scheduling.whitelist", "TokenMint"),
 						cryptoCreate("sender"),
 						cryptoCreate("receiver"),
@@ -148,6 +152,8 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	private HapiApiSpec addingSignaturesToNonExistingTxFails() {
 		return defaultHapiSpec("AddingSignatureByNonRequiredSignerFailsAddingSignaturesToNonExistingTxFails")
 				.given(
+						updateScheduleExpiryTimeSecs,
+						overriding("scheduling.whitelist", "CryptoCreate"),
 						cryptoCreate("sender"),
 						newKeyNamed("somebody")
 				)
@@ -163,6 +169,8 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("AddingSignaturesToExecutedTxFails")
 				.given(
+						updateScheduleExpiryTimeSecs,
+						overriding("scheduling.whitelist", "CryptoCreate"),
 						cryptoCreate("somesigner"),
 						scheduleCreate("basicCryptoCreate", txnBody)
 				)
@@ -179,6 +187,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payer").balance(ONE_HBAR),
 						cryptoCreate("sender").balance(1L),
+						overriding("scheduling.whitelist", "CryptoTransfer"),
 						cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
 				).when(
 						scheduleCreate(
@@ -199,6 +208,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				.given(
 						updateScheduleExpiryTimeSecs,
 						cryptoCreate("sender").balance(1L),
+						overriding("scheduling.whitelist", "CryptoTransfer"),
 						cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
 				).when(
 						scheduleCreate(
@@ -219,6 +229,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 				.given(
 						updateScheduleExpiryTimeSecs,
 						newKeyNamed("sharedKey"),
+						overriding("scheduling.whitelist", "CryptoCreate"),
 						cryptoCreate("payerWithSharedKey").key("sharedKey")
 				).when(
 						scheduleCreate(
@@ -249,6 +260,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						updateScheduleExpiryTimeSecs,
 						newKeyNamed("origKey"),
 						newKeyNamed("sharedKey"),
+						overriding("scheduling.whitelist", "CryptoCreate"),
 						cryptoCreate("payerToHaveSharedKey").key("origKey")
 				).when().then(
 						cryptoUpdate("payerToHaveSharedKey")
@@ -279,6 +291,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						newKeyNamed("cKey"),
 						cryptoCreate("aSender").key("aKey").balance(1L),
 						cryptoCreate("cSender").key("cKey").balance(1L),
+						overriding("scheduling.whitelist", "CryptoTransfer"),
 						balanceSnapshot("before", ADDRESS_BOOK_CONTROL)
 				).when(
 						scheduleCreate("deferredXfer",
@@ -307,6 +320,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 		return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMap")
 				.given(
 						updateScheduleExpiryTimeSecs,
+						overriding("scheduling.whitelist", "CryptoTransfer"),
 						newKeyNamed("a"),
 						newKeyNamed("b"),
 						newKeyListNamed("ab", List.of("a", "b")),
@@ -332,6 +346,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 		return defaultHapiSpec("SignFailsDueToDeletedExpiration")
 				.given(
 						sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any other scheduled expiring entity to expire
+						overriding("scheduling.whitelist", "CryptoTransfer"),
 						cryptoCreate("sender").balance(1L),
 						cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
 				).when(

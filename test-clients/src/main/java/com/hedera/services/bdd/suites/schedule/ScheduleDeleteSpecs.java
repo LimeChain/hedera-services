@@ -30,6 +30,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
@@ -65,12 +66,12 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     protected List<HapiApiSpec> getSpecsInSuite() {
         return List.of(new HapiApiSpec[] {
                     followsHappyPath(),
-//                    deleteWithNoAdminKeyFails(),
-//                    unauthorizedDeletionFails(),
-//                    deletingADeletedTxnFails(),
-//                    deletingNonExistingFails(),
-//                    deletingExecutedFails(),
-//                    expiredBeforeDeletion()
+                    deleteWithNoAdminKeyFails(),
+                    unauthorizedDeletionFails(),
+                    deletingADeletedTxnFails(),
+                    deletingNonExistingFails(),
+                    deletingExecutedFails(),
+                    expiredBeforeDeletion()
                 }
         );
     }
@@ -78,9 +79,11 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     private HapiApiSpec followsHappyPath() {
         return defaultHapiSpec("FollowsHappyPath")
                 .given(
+                        updateScheduleExpiryTimeSecs,
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
                         newKeyNamed("admin"),
+                        overriding("scheduling.whitelist", "CryptoTransfer"),
                         scheduleCreate("validScheduledTxn",
                                 cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
                                 .adminKey("admin")
@@ -91,7 +94,8 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                                 .hasKnownStatus(SUCCESS)
                 )
                 .then(
-                        // TODO assert that it is deleted after deletion impl
+                        getScheduleInfo("validScheduledTxn")
+                                .hasCostAnswerPrecheck(INVALID_SCHEDULE_ID)
                 );
     }
 
@@ -101,6 +105,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                 .given(
                         sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any scheduled expiring entity to expire
                         newKeyNamed("admin"),
+                        overriding("scheduling.whitelist", "CryptoTransfer"),
                         cryptoCreate("sender").balance(1L),
                         cryptoCreate("receiver").balance(0L).receiverSigRequired(true)
                 ).when(
@@ -125,6 +130,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     private HapiApiSpec deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")
                 .given(
+                        overriding("scheduling.whitelist", "CryptoTransfer"),
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
                         scheduleCreate("validScheduledTxn",
@@ -141,6 +147,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     private HapiApiSpec unauthorizedDeletionFails() {
         return defaultHapiSpec("UnauthorizedDeletionFails")
                 .given(
+                        overriding("scheduling.whitelist", "CryptoTransfer"),
                         newKeyNamed("admin"),
                         newKeyNamed("non-admin-key"),
                         cryptoCreate("sender"),
@@ -161,6 +168,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     private HapiApiSpec deletingADeletedTxnFails() {
         return defaultHapiSpec("DeletingADeletedTxnFails")
                 .given(
+                        overriding("scheduling.whitelist", "CryptoTransfer"),
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
                         newKeyNamed("admin"),

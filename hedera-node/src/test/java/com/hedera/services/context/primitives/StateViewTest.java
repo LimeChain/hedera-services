@@ -40,6 +40,8 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -291,7 +293,9 @@ class StateViewTest {
 		assertEquals(schedule.schedulingAccount().toGrpcAccountId(), info.getCreatorAccountID());
 		assertEquals(schedule.payer().toGrpcAccountId(), info.getPayerAccountID());
 		assertEquals(Timestamp.newBuilder().setSeconds(expiry).build(), info.getExpirationTime());
-		// TODO compare signatories once added
+		var expectedSignatoryList = KeyList.newBuilder();
+		schedule.signatories().forEach(a -> expectedSignatoryList.addKeys(Key.newBuilder().setEd25519(ByteString.copyFrom(a))));
+		assertArrayEquals(expectedSignatoryList.build().getKeysList().toArray(), info.getSignatories().getKeysList().toArray());
 		assertEquals(SCHEDULE_ADMIN_KT.asKey(), info.getAdminKey());
 		assertEquals(ByteString.copyFrom(schedule.transactionBody()), info.getTransactionBody());
 	}

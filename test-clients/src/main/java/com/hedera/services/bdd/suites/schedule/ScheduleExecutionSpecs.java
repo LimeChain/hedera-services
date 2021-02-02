@@ -42,9 +42,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     @Override
     protected List<HapiApiSpec> getSpecsInSuite() {
         return List.of(new HapiApiSpec[] {
-//                executionWithDefaultPayerWorks(),
+                executionWithDefaultPayerWorks(),
                 executionWithCustomPayerWorks(),
-//                executionWithDefaultPayerButNoFundsFails(),
+                executionWithDefaultPayerButNoFundsFails(),
                 executionWithCustomPayerButNoFundsFails()
         });
     }

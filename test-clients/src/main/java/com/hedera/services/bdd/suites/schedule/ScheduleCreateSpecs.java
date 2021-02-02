@@ -88,38 +88,38 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				bodyOnlyCreation(),
-//				onlyBodyAndAdminCreation(),
-//				onlyBodyAndMemoCreation(),
-//				bodyAndSignatoriesCreation(),
-//				bodyAndPayerCreation(),
-//				nestedScheduleCreateFails(),
-//				nestedScheduleSignFails(),
-//				scheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated(),
-//				scheduledTXWithDifferentPayerAreNotIdempotentlyCreated(),
-//				scheduledTXWithDifferentAdminAreNotIdempotentlyCreated(),
-//				scheduledTXWithDifferentMemoAreNotIdempotentlyCreated(),
-//				idempotentCreationWithBodyOnly(),
-//				idempotentCreationWithBodyAndPayer(),
-//				idempotentCreationWithBodyAndAdmin(),
-//				idempotentCreationWithBodyAndMemo(),
-//				idempotentCreationWhenAllPropsAreTheSame(),
-//				rejectsUnparseableTxn(),
-//				rejectsUnresolvableReqSigners(),
-//				triggersImmediatelyWithBothReqSimpleSigs(),
-//				onlySchedulesWithMissingReqSimpleSigs(),
-//				preservesRevocationServiceSemanticsForFileDelete(),
-//				failsWithNonExistingPayerAccountId(),
-//				failsWithTooLongMemo(),
-//				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
-//				retestsActivationOnCreateWithEmptySigMap(),
-//				doesntTriggerUntilPayerSigns(),
-//				requiresExtantPayer(),
-//				preservesRevocationServiceSemanticsForFileDelete(),
-//				rejectsFunctionlessTxn(),
-//				whitelistWorks(),
-//				allowsDoublingScheduledCreates(),
-//				scheduledTXCreatedAfterPreviousIdenticalIsExecuted()
+				bodyOnlyCreation(),
+				onlyBodyAndAdminCreation(),
+				onlyBodyAndMemoCreation(),
+				bodyAndSignatoriesCreation(),
+				bodyAndPayerCreation(),
+				nestedScheduleCreateFails(),
+				nestedScheduleSignFails(),
+				scheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated(),
+				scheduledTXWithDifferentPayerAreNotIdempotentlyCreated(),
+				scheduledTXWithDifferentAdminAreNotIdempotentlyCreated(),
+				scheduledTXWithDifferentMemoAreNotIdempotentlyCreated(),
+				idempotentCreationWithBodyOnly(),
+				idempotentCreationWithBodyAndPayer(),
+				idempotentCreationWithBodyAndAdmin(),
+				idempotentCreationWithBodyAndMemo(),
+				idempotentCreationWhenAllPropsAreTheSame(),
+				rejectsUnparseableTxn(),
+				rejectsUnresolvableReqSigners(),
+				triggersImmediatelyWithBothReqSimpleSigs(),
+				onlySchedulesWithMissingReqSimpleSigs(),
+				preservesRevocationServiceSemanticsForFileDelete(),
+				failsWithNonExistingPayerAccountId(),
+				failsWithTooLongMemo(),
+				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
+				retestsActivationOnCreateWithEmptySigMap(),
+				doesntTriggerUntilPayerSigns(),
+				requiresExtantPayer(),
+				preservesRevocationServiceSemanticsForFileDelete(),
+				rejectsFunctionlessTxn(),
+				whitelistWorks(),
+				allowsDoublingScheduledCreates(),
+				scheduledTXCreatedAfterPreviousIdenticalIsExecuted()
 		});
 	}
 
@@ -198,6 +198,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("BodyAndSignatoriesCreation")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payingAccount"),
 						newKeyNamed("adminKey"),
 						cryptoCreate("sender"),
@@ -217,7 +218,9 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec failsWithNonExistingPayerAccountId() {
 		return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
-				.given()
+				.given(
+						updateScheduleExpiryTimeSecs
+				)
 				.when(
 						scheduleCreate("invalidPayer", cryptoCreate("secondary"))
 								.designatingPayer("0.0.9999")
@@ -228,7 +231,9 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private HapiApiSpec failsWithTooLongMemo() {
 		return defaultHapiSpec("FailsWithTooLongMemo")
-				.given()
+				.given(
+						updateScheduleExpiryTimeSecs
+				)
 				.when(
 						scheduleCreate("invalidMemo", cryptoCreate("secondary"))
 								.withEntityMemo(nAscii(101))
@@ -246,6 +251,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("AllowsDoublingScheduledCreates")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payingAccount"),
 						cryptoCreate("sender"),
 						cryptoCreate("receiver").receiverSigRequired(true),
@@ -280,6 +286,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("ScheduledTXCreatedAfterPreviousIdenticalIsExecuted")
 				.given(
+						updateScheduleExpiryTimeSecs,
 						cryptoCreate("payingAccount"),
 						cryptoCreate("sender1"),
 						cryptoCreate("receiver1"),
@@ -639,7 +646,9 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	public HapiApiSpec requiresExtantPayer() {
 		return defaultHapiSpec("RequiresExtantPayer")
-				.given( ).when( ).then(
+				.given(
+						updateScheduleExpiryTimeSecs
+				).when( ).then(
 						scheduleCreate(
 								"neverToBe",
 								cryptoCreate("nope")
