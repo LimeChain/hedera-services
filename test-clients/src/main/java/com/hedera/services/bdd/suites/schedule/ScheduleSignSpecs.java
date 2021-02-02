@@ -70,18 +70,18 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						expiredBeforeSigning(),
-						triggersUponAdditionalNeededSig(),
-						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
-						scheduleSigIrrelevantToSchedulingTxn(),
-						overlappingKeysTreatedAsExpected(),
-						retestsActivationOnSignWithEmptySigMap(),
-						basicSignatureCollectionWorks(), // TODO: Signatories not implemented yet
-						addingSignaturesToExecutedTxFails(),
+//						expiredBeforeSigning(),
+//						triggersUponAdditionalNeededSig(),
+//						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
+//						scheduleSigIrrelevantToSchedulingTxn(),
+//						overlappingKeysTreatedAsExpected(),
+//						retestsActivationOnSignWithEmptySigMap(),
+						basicSignatureCollectionWorks(),
+//						addingSignaturesToExecutedTxFails(),
 						addingSignaturesToNonExistingTxFails(),
-						addingSignatureByNonRequiredSignerFails(),
+//						addingSignatureByNonRequiredSignerFails(),
 						addingSignatureByNonRequiredSignerFails2(),
-						triggersUponFinishingPayerSig()
+//						triggersUponFinishingPayerSig()
 				}
 		);
 	}
@@ -166,7 +166,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleCreate("basicCryptoCreate", txnBody)
 				)
 				.when(
-						scheduleSign("basicCryptoCreate").withSignatories("somesigner").hasKnownStatus(SCHEDULE_WAS_DELETED)
+						scheduleSign("basicCryptoCreate").withSignatories("somesigner").hasKnownStatus(INVALID_SCHEDULE_ID)
 				)
 				.then(
 				);

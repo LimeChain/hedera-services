@@ -216,6 +216,7 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 		var registry = spec.registry();
 		registry.saveScheduleId(entity, lastReceipt.getScheduleID());
 		registry.saveBytes(registryBytesTag(entity), bytesSigned);
+		registry.saveExpiry(entity, (long)defaultScheduleTxnExpiry);
 		adminKey.ifPresent(k -> registry.saveAdminKey(entity, spec.registry().getKey(k)));
 	}
 

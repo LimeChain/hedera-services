@@ -156,7 +156,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 cryptoTransfer(
                                         tinyBarsFromTo("sender", "receiver", transferAmount)
                                 )
-                        ).scheduledTXPayer("payingAccount").via("createTx")
+                        ).designatingPayer("payingAccount").via("createTx")
                 ).when(
                         scheduleSign("basicXfer").withSignatories("sender").via("signTx").hasKnownStatus(SUCCESS)
                 ).then(
@@ -182,7 +182,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 cryptoTransfer(
                                         tinyBarsFromTo("sender", "receiver", transferAmount)
                                 )
-                        ).scheduledTXPayer("payingAccount").via("createTx")
+                        ).designatingPayer("payingAccount").via("createTx")
                 ).when(
                         scheduleSign("basicXfer").withSignatories("sender").via("signTx").hasKnownStatus(SUCCESS)
                 ).then(

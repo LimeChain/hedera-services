@@ -97,10 +97,9 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				onlyBodyAndMemoCreation(),
 				bodyAndSignatoriesCreation(),
 				bodyAndPayerCreation(),
-				bodyAndMemoCreation(),
 				nestedScheduleCreateFails(),
 				nestedScheduleSignFails(),
-				scheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated(),
+//				scheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated(), // todo
 				scheduledTXWithDifferentPayerAreNotIdempotentlyCreated(),
 				scheduledTXWithDifferentAdminAreNotIdempotentlyCreated(),
 				scheduledTXWithDifferentMemoAreNotIdempotentlyCreated(),
@@ -114,7 +113,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				triggersImmediatelyWithBothReqSimpleSigs(),
 				onlySchedulesWithMissingReqSimpleSigs(),
 				preservesRevocationServiceSemanticsForFileDelete(),
-				failsWithNonExistingPayerAccountId(),
+//				failsWithNonExistingPayerAccountId(), // todo
 				failsWithTooLongMemo(),
 				detectsKeysChangedBetweenExpandSigsAndHandleTxn(),
 				retestsActivationOnCreateWithEmptySigMap(),
@@ -194,21 +193,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec bodyAndMemoCreation() {
-		return defaultHapiSpec("BodyAndMemoCreation")
-				.given(
-						cryptoCreate("payer")
-				).when(
-						scheduleCreate("onlyBodyAndMemo", cryptoCreate("secondary"))
-								.withEntityMemo("some memo")
-				).then(
-						getScheduleInfo("onlyBodyAndMemo")
-								.hasScheduleId("onlyBodyAndMemo")
-								.hasEntityMemo("some memo")
-								.hasValidTxBytes()
-				);
-	}
-
 	private HapiApiSpec bodyAndSignatoriesCreation() {
 		var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
 
@@ -221,7 +205,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				).when(
 						scheduleCreate("onlyBodyAndSignatories", txnBody.signedBy("receiver"))
 								.adminKey("adminKey")
-								.payer("payingAccount")
+								.designatingPayer("payingAccount")
 								.inheritingScheduledSigs()
 				).then(
 						getScheduleInfo("onlyBodyAndSignatories")
@@ -237,7 +221,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.when(
 						scheduleCreate("invalidPayer", cryptoCreate("secondary"))
 								.designatingPayer("0.0.9999")
-								.hasKnownStatus(INVALID_SCHEDULE_PAYER_ID)
+								.hasKnownStatus(INVALID_ACCOUNT_ID)
 				)
 				.then();
 	}
@@ -268,13 +252,13 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						newKeyNamed("adminKey"),
 						scheduleCreate("toBeCreated", txnBody)
 								.adminKey("adminKey")
-								.payer("payingAccount"),
+								.designatingPayer("payingAccount"),
 						getScheduleInfo("toBeCreated").logged()
 				)
 				.when(
 						scheduleCreate("toBeCreated2", txnBody.signedBy("receiver"))
 								.adminKey("adminKey")
-								.payer("payingAccount")
+								.designatingPayer("payingAccount")
 								.inheritingScheduledSigs()
 				)
 				.then(
