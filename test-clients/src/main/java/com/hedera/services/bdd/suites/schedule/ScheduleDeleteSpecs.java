@@ -39,7 +39,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -65,7 +64,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     @Override
     protected List<HapiApiSpec> getSpecsInSuite() {
         return List.of(new HapiApiSpec[] {
-//                    followsHappyPath(),
+                    followsHappyPath(),
 //                    deleteWithNoAdminKeyFails(),
 //                    unauthorizedDeletionFails(),
 //                    deletingADeletedTxnFails(),

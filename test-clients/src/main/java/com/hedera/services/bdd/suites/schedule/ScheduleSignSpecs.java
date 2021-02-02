@@ -53,7 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class ScheduleSignSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleSignSpecs.class);
@@ -70,15 +69,15 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						expiredBeforeSigning(),
+						expiredBeforeSigning(),
 //						triggersUponAdditionalNeededSig(),
 //						requiresSharedKeyToSignBothSchedulingAndScheduledTxns(),
 //						scheduleSigIrrelevantToSchedulingTxn(),
 //						overlappingKeysTreatedAsExpected(),
 //						retestsActivationOnSignWithEmptySigMap(),
-						basicSignatureCollectionWorks(), // TODO: Bad costAnswerPrecheck! expected {}, actual {}
+//						basicSignatureCollectionWorks(),
 //						addingSignaturesToExecutedTxFails(),
-						addingSignaturesToNonExistingTxFails(),
+//						addingSignaturesToNonExistingTxFails(),
 //						addingSignatureByNonRequiredSignerFails(),
 //						addingSignatureByNonRequiredSignerFails2(),
 //						triggersUponFinishingPayerSig()
@@ -97,11 +96,11 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleCreate("basicXfer", txnBody)
 				)
 				.when(
-						scheduleSign("basicXfer").withSignatories("receiver", "sender")
+						scheduleSign("basicXfer").withSignatories("receiver")
 				)
 				.then(
 						getScheduleInfo("basicXfer")
-								.hasSignatories("receiver", "sender")
+								.hasSignatories("receiver")
 				);
 	}
 

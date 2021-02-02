@@ -43,9 +43,9 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     protected List<HapiApiSpec> getSpecsInSuite() {
         return List.of(new HapiApiSpec[] {
 //                executionWithDefaultPayerWorks(),
-                executionWithCustomPayerWorks(), // TODO: revise after Michael's PR
+                executionWithCustomPayerWorks(),
 //                executionWithDefaultPayerButNoFundsFails(),
-                executionWithCustomPayerButNoFundsFails() // TODO: revise after Michael's PR
+                executionWithCustomPayerButNoFundsFails()
         });
     }
 
@@ -158,7 +158,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 )
                         ).designatingPayer("payingAccount").via("createTx")
                 ).when(
-                        scheduleSign("basicXfer").withSignatories("sender").via("signTx").hasKnownStatus(SUCCESS)
+                        scheduleSign("basicXfer")
+                                .withSignatories("sender", "payingAccount")
+                                .via("signTx")
+                                .hasKnownStatus(SUCCESS)
                 ).then(
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord("createTx").scheduled();
@@ -182,9 +185,14 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 cryptoTransfer(
                                         tinyBarsFromTo("sender", "receiver", transferAmount)
                                 )
-                        ).designatingPayer("payingAccount").via("createTx")
+                        )
+                                .designatingPayer("payingAccount")
+                                .via("createTx")
                 ).when(
-                        scheduleSign("basicXfer").withSignatories("sender").via("signTx").hasKnownStatus(SUCCESS)
+                        scheduleSign("basicXfer")
+                                .withSignatories("sender", "payingAccount")
+                                .via("signTx")
+                                .hasKnownStatus(SUCCESS)
                 ).then(
                         withOpContext((spec, opLog) -> {
                             var signTx = getTxnRecord("signTx");

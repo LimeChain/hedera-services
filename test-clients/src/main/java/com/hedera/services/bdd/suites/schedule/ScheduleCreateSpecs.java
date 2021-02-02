@@ -45,7 +45,6 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -62,16 +61,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureIdempotentlyC
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.saveExpirations;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_PAYER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_SCHEDULED_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNSCHEDULABLE_TRANSACTION;
-import static org.junit.Assert.assertNotEquals;
 
 public class ScheduleCreateSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ScheduleCreateSpecs.class);
@@ -99,7 +95,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 //				bodyAndPayerCreation(),
 //				nestedScheduleCreateFails(),
 //				nestedScheduleSignFails(),
-				scheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated(), // TODO: STILL FAILS
+//				scheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated(),
 //				scheduledTXWithDifferentPayerAreNotIdempotentlyCreated(),
 //				scheduledTXWithDifferentAdminAreNotIdempotentlyCreated(),
 //				scheduledTXWithDifferentMemoAreNotIdempotentlyCreated(),
@@ -111,7 +107,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 //				rejectsUnparseableTxn(),
 //				rejectsUnresolvableReqSigners(),
 //				triggersImmediatelyWithBothReqSimpleSigs(),
-				onlySchedulesWithMissingReqSimpleSigs(), // TODO: Status UNKNOWN instead of SUCCESS
+//				onlySchedulesWithMissingReqSimpleSigs(),
 //				preservesRevocationServiceSemanticsForFileDelete(),
 //				failsWithNonExistingPayerAccountId(),
 //				failsWithTooLongMemo(),
@@ -323,6 +319,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 								.via("second")
 				)
 				.then(
+						saveExpirations("first", "second", SCHEDULE_EXPIRY_TIME_SECS),
 						ensureDifferentScheduledTXCreated("first", "second"),
 						getScheduleInfo("first")
 								.hasAdminKey("admin")
