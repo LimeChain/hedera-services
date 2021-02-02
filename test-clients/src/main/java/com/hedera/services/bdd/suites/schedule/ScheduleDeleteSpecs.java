@@ -65,13 +65,13 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     @Override
     protected List<HapiApiSpec> getSpecsInSuite() {
         return List.of(new HapiApiSpec[] {
-                    followsHappyPath(),
-                    deleteWithNoAdminKeyFails(),
-                    unauthorizedDeletionFails(),
-                    deletingADeletedTxnFails(),
-                    deletingNonExistingFails(),
-                    deletingExecutedFails(),
-                    expiredBeforeDeletion()
+//                    followsHappyPath(),
+//                    deleteWithNoAdminKeyFails(),
+//                    unauthorizedDeletionFails(),
+                    deletingADeletedTxnFails(), // TODO: Wrong actual status INVALID_SCHEDULE_ID, expected SUCCESS
+//                    deletingNonExistingFails(),
+                    deletingExecutedFails(), // TODO: Wrong actual status INVALID_SCHEDULE_ID, expected SUCCESS
+//                    expiredBeforeDeletion()
                 }
         );
     }
@@ -113,6 +113,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                                 ).signedBy("sender")
                         )
                                 .adminKey("admin")
+                                .signedBy(DEFAULT_PAYER, "admin")
                                 .inheritingScheduledSigs(),
                         updateScheduleExpiryTimeSecs,
                         getAccountBalance("receiver").hasTinyBars(0L)
@@ -186,10 +187,11 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                 )
                 .then();
     }
-    // TODO: DA
+
     private HapiApiSpec deletingExecutedFails() {
         return defaultHapiSpec("DeletingExpiredFails")
                 .given(
+                        overriding("scheduling.whitelist", "CryptoCreate"),
                         newKeyNamed("admin"),
                         scheduleCreate("validScheduledTxn",
                                 cryptoCreate("newImmediate"))

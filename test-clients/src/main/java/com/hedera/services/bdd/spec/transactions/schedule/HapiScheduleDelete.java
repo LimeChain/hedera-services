@@ -86,8 +86,7 @@ public class HapiScheduleDelete extends HapiTxnOp<HapiScheduleDelete> {
     @Override
     protected List<Function<HapiApiSpec, Key>> defaultSigners() {
         return List.of(
-                spec -> spec.registry().getKey(effectivePayer(spec)),
-                spec -> spec.registry().getAdminKey(schedule)
+                spec -> spec.registry().getKey(effectivePayer(spec))
         );
     }
 

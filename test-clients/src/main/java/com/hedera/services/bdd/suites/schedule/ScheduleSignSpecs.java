@@ -76,11 +76,11 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 //						scheduleSigIrrelevantToSchedulingTxn(),
 //						overlappingKeysTreatedAsExpected(),
 //						retestsActivationOnSignWithEmptySigMap(),
-						basicSignatureCollectionWorks(),
+						basicSignatureCollectionWorks(), // TODO: Bad costAnswerPrecheck! expected {}, actual {}
 //						addingSignaturesToExecutedTxFails(),
-						addingSignaturesToNonExistingTxFails(),
+						addingSignaturesToNonExistingTxFails(), // TODO: HapiScheduleSign{sigs=1, node=0.0.3, schedule=0.0.123321} Wrong actual precheck status OK, expecting INVALID_SCHEDULE_ID
 //						addingSignatureByNonRequiredSignerFails(),
-						addingSignatureByNonRequiredSignerFails2(),
+//						addingSignatureByNonRequiredSignerFails2(),
 //						triggersUponFinishingPayerSig()
 				}
 		);
@@ -91,6 +91,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("BasicSignatureCollectionWorks")
 				.given(
+						overriding("scheduling.whitelist", "CryptoTransfer"),
 						cryptoCreate("sender"),
 						cryptoCreate("receiver").receiverSigRequired(true),
 						scheduleCreate("basicXfer", txnBody)
@@ -127,6 +128,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 
 		return defaultHapiSpec("AddingSignatureByNonRequiredSignerFails")
 				.given(
+						overriding("scheduling.whitelist", "TokenMint"),
 						cryptoCreate("sender"),
 						cryptoCreate("receiver"),
 						newKeyNamed("somebody"),
@@ -145,7 +147,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec addingSignaturesToNonExistingTxFails() {
-		return defaultHapiSpec("AddingSignaturesToNonExistingTxFails")
+		return defaultHapiSpec("AddingSignatureByNonRequiredSignerFailsAddingSignaturesToNonExistingTxFails")
 				.given(
 						cryptoCreate("sender"),
 						newKeyNamed("somebody")
