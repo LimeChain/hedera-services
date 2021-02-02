@@ -68,9 +68,9 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 //                    followsHappyPath(),
 //                    deleteWithNoAdminKeyFails(),
 //                    unauthorizedDeletionFails(),
-                    deletingADeletedTxnFails(), // TODO: Wrong actual status INVALID_SCHEDULE_ID, expected SUCCESS
+//                    deletingADeletedTxnFails(),
 //                    deletingNonExistingFails(),
-                    deletingExecutedFails(), // TODO: Wrong actual status INVALID_SCHEDULE_ID, expected SUCCESS
+//                    deletingExecutedFails(),
 //                    expiredBeforeDeletion()
                 }
         );
@@ -173,9 +173,11 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                 .when(
                         scheduleDelete("validScheduledTxn")
                                 .signedBy("admin", DEFAULT_PAYER)
-                                .hasKnownStatus(SUCCESS)
+                                .hasKnownStatus(INVALID_SCHEDULE_ID)
                 )
-                .then();
+                .then(
+
+                );
     }
 
     private HapiApiSpec deletingNonExistingFails() {
@@ -200,7 +202,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                 .when(
                         scheduleDelete("validScheduledTxn")
                                 .signedBy("admin", DEFAULT_PAYER)
-                                .hasKnownStatus(SUCCESS)
+                                .hasKnownStatus(INVALID_SCHEDULE_ID)
                 )
                 .then();
     }

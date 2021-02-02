@@ -78,7 +78,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 //						retestsActivationOnSignWithEmptySigMap(),
 						basicSignatureCollectionWorks(), // TODO: Bad costAnswerPrecheck! expected {}, actual {}
 //						addingSignaturesToExecutedTxFails(),
-						addingSignaturesToNonExistingTxFails(), // TODO: HapiScheduleSign{sigs=1, node=0.0.3, schedule=0.0.123321} Wrong actual precheck status OK, expecting INVALID_SCHEDULE_ID
+						addingSignaturesToNonExistingTxFails(),
 //						addingSignatureByNonRequiredSignerFails(),
 //						addingSignatureByNonRequiredSignerFails2(),
 //						triggersUponFinishingPayerSig()
@@ -153,7 +153,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						newKeyNamed("somebody")
 				)
 				.when(
-						scheduleSign("0.0.123321").withSignatories("somebody", "sender").hasPrecheck(INVALID_SCHEDULE_ID)
+						scheduleSign("0.0.123321").withSignatories("somebody", "sender").hasKnownStatus(INVALID_SCHEDULE_ID)
 				)
 				.then(
 				);
