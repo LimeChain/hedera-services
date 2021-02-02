@@ -136,7 +136,9 @@ public class HapiGetScheduleInfo extends HapiQueryOp<HapiGetScheduleInfo> {
                 var key = registry.getKey(signatory);
                 expect.addKeys(key);
             }
-            Assert.assertEquals("Wrong signatories!", expect.build(), actualInfo.getSigners());
+            Assert.assertArrayEquals("Wrong signatories!",
+                    expect.build().getKeysList().toArray(),
+                    actualInfo.getSignatories().getKeysList().toArray());
         });
 
         if (expectValidTxBytes) {

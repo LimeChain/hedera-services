@@ -76,34 +76,31 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleSigIrrelevantToSchedulingTxn(),
 						overlappingKeysTreatedAsExpected(),
 						retestsActivationOnSignWithEmptySigMap(),
-						basicSignatureCollectionWorks(), // 19 TODO: Signatories not implemented yet
-						addingSignaturesToExecutedTxFails(), // 20
-						addingSignaturesToNonExistingTxFails(), // 21
-//						addingInvalidEd25519Fails(), // 22
-//						addingEd25519WithInvalidFormatFails(), // 23
-						addingSignatureByNonRequiredSignerFails(), // 24
-						addingSignatureByNonRequiredSignerFails2(), // 25
-						triggersUponFinishingPayerSig(),
+						basicSignatureCollectionWorks(), // TODO: Signatories not implemented yet
+						addingSignaturesToExecutedTxFails(),
+						addingSignaturesToNonExistingTxFails(),
+						addingSignatureByNonRequiredSignerFails(),
+						addingSignatureByNonRequiredSignerFails2(),
+						triggersUponFinishingPayerSig()
 				}
 		);
 	}
 
 	private HapiApiSpec basicSignatureCollectionWorks() {
-		var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)).signedBy("somebody");
+		var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
 
 		return defaultHapiSpec("BasicSignatureCollectionWorks")
 				.given(
 						cryptoCreate("sender"),
-						cryptoCreate("receiver"),
-						newKeyNamed("somebody"),
+						cryptoCreate("receiver").receiverSigRequired(true),
 						scheduleCreate("basicXfer", txnBody)
 				)
 				.when(
-						scheduleSign("basicXfer").withSignatories("somebody", "sender")
+						scheduleSign("basicXfer").withSignatories("receiver", "sender")
 				)
 				.then(
 						getScheduleInfo("basicXfer")
-								.hasSignatories("somebody", "sender")
+								.hasSignatories("receiver", "sender")
 				);
 	}
 

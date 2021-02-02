@@ -90,8 +90,6 @@ public class HederaScheduleStoreTest {
     RichInstant consensusTime;
     Key adminKey;
     JKey adminJKey;
-    JKey signer1, signer2;
-    Set<JKey> signers;
 
     ScheduleID created = IdUtils.asSchedule("1.2.333333");
     AccountID schedulingAccount = IdUtils.asAccount("1.2.333");
@@ -114,12 +112,6 @@ public class HederaScheduleStoreTest {
         consensusTime = new RichInstant(expectedExpiry, 0);
         adminKey = SCHEDULE_ADMIN_KT.asKey();
         adminJKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
-
-        signer1 = SCHEDULE_SIGNER_ONE_KT.asJKeyUnchecked();
-        signer2 = SCHEDULE_SIGNER_TWO_KT.asJKeyUnchecked();
-        signers = new LinkedHashSet<>();
-        signers.add(signer1);
-        signers.add(signer2);
 
         schedule = mock(MerkleSchedule.class);
         anotherSchedule = mock(MerkleSchedule.class);

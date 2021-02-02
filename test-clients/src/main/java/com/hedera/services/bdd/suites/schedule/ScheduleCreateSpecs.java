@@ -95,8 +95,9 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				bodyOnlyCreation(),
 				onlyBodyAndAdminCreation(),
 				onlyBodyAndMemoCreation(),
-//				bodyAndSignatoriesCreation(),
+				bodyAndSignatoriesCreation(),
 				bodyAndPayerCreation(),
+				bodyAndMemoCreation(),
 				nestedScheduleCreateFails(),
 				nestedScheduleSignFails(),
 				scheduledTXWithDifferentAdminAndPayerAreNotIdempotentlyCreated(),
@@ -193,6 +194,43 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec bodyAndMemoCreation() {
+		return defaultHapiSpec("BodyAndMemoCreation")
+				.given(
+						cryptoCreate("payer")
+				).when(
+						scheduleCreate("onlyBodyAndMemo", cryptoCreate("secondary"))
+								.withEntityMemo("some memo")
+				).then(
+						getScheduleInfo("onlyBodyAndMemo")
+								.hasScheduleId("onlyBodyAndMemo")
+								.hasEntityMemo("some memo")
+								.hasValidTxBytes()
+				);
+	}
+
+	private HapiApiSpec bodyAndSignatoriesCreation() {
+		var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
+
+		return defaultHapiSpec("BodyAndSignatoriesCreation")
+				.given(
+						cryptoCreate("payingAccount"),
+						newKeyNamed("adminKey"),
+						cryptoCreate("sender"),
+						cryptoCreate("receiver").receiverSigRequired(true)
+				).when(
+						scheduleCreate("onlyBodyAndSignatories", txnBody.signedBy("receiver"))
+								.adminKey("adminKey")
+								.payer("payingAccount")
+								.inheritingScheduledSigs()
+				).then(
+						getScheduleInfo("onlyBodyAndSignatories")
+								.hasScheduleId("onlyBodyAndSignatories")
+								.hasSignatories("receiver")
+								.hasValidTxBytes()
+				);
+	}
+
 	private HapiApiSpec failsWithNonExistingPayerAccountId() {
 		return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
 				.given()
@@ -200,7 +238,6 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 						scheduleCreate("invalidPayer", cryptoCreate("secondary"))
 								.designatingPayer("0.0.9999")
 								.hasKnownStatus(INVALID_SCHEDULE_PAYER_ID)
-
 				)
 				.then();
 	}
@@ -218,6 +255,40 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 
 	private String nAscii(int n) {
 		return IntStream.range(0, n).mapToObj(ignore -> "A").collect(Collectors.joining());
+	}
+
+	private HapiApiSpec allowsDoublingScheduledCreates() {
+		var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
+
+		return defaultHapiSpec("AllowsDoublingScheduledCreates")
+				.given(
+						cryptoCreate("payingAccount"),
+						cryptoCreate("sender"),
+						cryptoCreate("receiver").receiverSigRequired(true),
+						newKeyNamed("adminKey"),
+						scheduleCreate("toBeCreated", txnBody)
+								.adminKey("adminKey")
+								.payer("payingAccount"),
+						getScheduleInfo("toBeCreated").logged()
+				)
+				.when(
+						scheduleCreate("toBeCreated2", txnBody.signedBy("receiver"))
+								.adminKey("adminKey")
+								.payer("payingAccount")
+								.inheritingScheduledSigs()
+				)
+				.then(
+						getScheduleInfo("toBeCreated")
+								.hasScheduleId("toBeCreated")
+								.hasPayerAccountID("payingAccount")
+								.hasAdminKey("adminKey")
+								.hasSignatories("receiver"),
+						getScheduleInfo("toBeCreated2")
+								.hasScheduleId("toBeCreated")
+								.hasPayerAccountID("payingAccount")
+								.hasAdminKey("adminKey")
+								.hasSignatories("receiver")
+				);
 	}
 
 	private HapiApiSpec scheduledTXCreatedAfterPreviousIdenticalIsExecuted() {
