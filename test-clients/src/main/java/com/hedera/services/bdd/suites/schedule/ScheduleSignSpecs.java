@@ -106,22 +106,20 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 	}
 
 	private HapiApiSpec addingSignatureByNonRequiredSignerFails() {
-		var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)).signedBy("somebody");
+		var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
 
 		return defaultHapiSpec("AddingSignatureByNonRequiredSignerFails")
 				.given(
 						updateScheduleExpiryTimeSecs,
 						cryptoCreate("sender"),
 						cryptoCreate("receiver"),
-						newKeyNamed("somebody"),
 						newKeyNamed("somebodyelse"),
 						overriding("scheduling.whitelist", "CryptoTransfer"),
 						scheduleCreate("basicXfer", txnBody)
 				)
-				.when(
-						scheduleSign("basicXfer").withSignatories("somebodyelse").hasKnownStatus(SOME_SIGNATURES_WERE_INVALID)
-				)
+				.when()
 				.then(
+						scheduleSign("basicXfer").withSignatories("somebodyelse").hasKnownStatus(SOME_SIGNATURES_WERE_INVALID)
 				);
 	}
 
@@ -142,10 +140,10 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						scheduleCreate("tokenMintScheduled", txnBody)
 				)
 				.when(
-						tokenUpdate("tokenA").supplyKey("newMint"),
-						scheduleSign("tokenMintScheduled").withSignatories("mint").hasKnownStatus(SOME_SIGNATURES_WERE_INVALID)
+						tokenUpdate("tokenA").supplyKey("newMint")
 				)
 				.then(
+						scheduleSign("tokenMintScheduled").withSignatories("mint").hasKnownStatus(SOME_SIGNATURES_WERE_INVALID)
 				);
 	}
 
@@ -157,10 +155,9 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						cryptoCreate("sender"),
 						newKeyNamed("somebody")
 				)
-				.when(
-						scheduleSign("0.0.123321").withSignatories("somebody", "sender").hasKnownStatus(INVALID_SCHEDULE_ID)
-				)
+				.when()
 				.then(
+						scheduleSign("0.0.123321").withSignatories("somebody", "sender").hasKnownStatus(INVALID_SCHEDULE_ID)
 				);
 	}
 
@@ -174,10 +171,9 @@ public class ScheduleSignSpecs extends HapiApiSuite {
 						cryptoCreate("somesigner"),
 						scheduleCreate("basicCryptoCreate", txnBody)
 				)
-				.when(
-						scheduleSign("basicCryptoCreate").withSignatories("somesigner").hasKnownStatus(INVALID_SCHEDULE_ID)
-				)
+				.when()
 				.then(
+						scheduleSign("basicCryptoCreate").withSignatories("somesigner").hasKnownStatus(INVALID_SCHEDULE_ID)
 				);
 	}
 

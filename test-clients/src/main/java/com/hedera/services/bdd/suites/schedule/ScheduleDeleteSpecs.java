@@ -138,10 +138,10 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                                 cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1)))
                 )
                 .when(
-                        scheduleDelete("validScheduledTxn")
-                                .hasKnownStatus(SCHEDULE_IS_IMMUTABLE)
                 )
                 .then(
+                        scheduleDelete("validScheduledTxn")
+                                .hasKnownStatus(SCHEDULE_IS_IMMUTABLE)
                 );
     }
 
@@ -159,11 +159,11 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                                 .adminKey("admin")
                 )
                 .when(
+                )
+                .then(
                         scheduleDelete("validScheduledTxn")
                                 .signedBy(DEFAULT_PAYER, "non-admin-key")
                                 .hasKnownStatus(INVALID_SIGNATURE)
-                )
-                .then(
                 );
     }
 
@@ -181,12 +181,11 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                         scheduleDelete("validScheduledTxn")
                                 .signedBy("admin", DEFAULT_PAYER))
                 .when(
+                )
+                .then(
                         scheduleDelete("validScheduledTxn")
                                 .signedBy("admin", DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_SCHEDULE_ID)
-                )
-                .then(
-
                 );
     }
 
@@ -195,11 +194,11 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                 .given(
                         updateScheduleExpiryTimeSecs
                 )
-                .when(
+                .when()
+                .then(
                         scheduleDelete("0.0.534")
                                 .hasKnownStatus(INVALID_SCHEDULE_ID)
-                )
-                .then();
+                );
     }
 
     private HapiApiSpec deletingExecutedFails() {
@@ -212,11 +211,11 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
                                 cryptoCreate("newImmediate"))
                                 .adminKey("admin")
                 )
-                .when(
+                .when()
+                .then(
                         scheduleDelete("validScheduledTxn")
                                 .signedBy("admin", DEFAULT_PAYER)
                                 .hasKnownStatus(INVALID_SCHEDULE_ID)
-                )
-                .then();
+                );
     }
 }

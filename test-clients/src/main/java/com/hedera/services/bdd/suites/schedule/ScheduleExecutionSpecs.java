@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -95,10 +96,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                     triggeredTx.getResponseRecord().getTransactionID().getNonce());
 
                             Assert.assertEquals("Wrong schedule ID!",
-                                    createTx.getResponseRecord().getScheduleRef(),
+                                    createTx.getResponseRecord().getReceipt().getScheduleID(),
                                     triggeredTx.getResponseRecord().getScheduleRef());
 
-                            Assert.assertTrue("Wrong transfer list!", transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec), transferAmount));
+                            Assert.assertTrue("Wrong transfer list!", transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec), asId(DEFAULT_PAYER, spec), transferAmount));
                         })
                 );
     }
@@ -156,7 +157,6 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                 .given(
                         updateScheduleExpiryTimeSecs,
                         cryptoCreate("payingAccount").balance(balance),
-                        cryptoCreate("luckyReceiver"),
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
                         scheduleCreate(
@@ -231,15 +231,15 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                     triggeredTx.getResponseRecord().getTransactionID().getNonce());
 
                             Assert.assertEquals("Wrong schedule ID!",
-                                    createTx.getResponseRecord().getScheduleRef(),
+                                    createTx.getResponseRecord().getReceipt().getScheduleID(),
                                     triggeredTx.getResponseRecord().getScheduleRef());
 
-                            Assert.assertTrue("Wrong transfer list!", transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec), transferAmount));
+                            Assert.assertTrue("Wrong transfer list!", transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec), asId("payingAccount", spec), transferAmount));
                         })
                 );
     }
 
-    private boolean transferListCheck(HapiGetTxnRecord triggered, AccountID givingAccountID, AccountID receivingAccountID, Long amount) {
+    private boolean transferListCheck(HapiGetTxnRecord triggered, AccountID givingAccountID, AccountID receivingAccountID, AccountID payingAccountID, Long amount) {
         AccountAmount givingAmount = AccountAmount.newBuilder()
                 .setAccountID(givingAccountID)
                 .setAmount(-amount)
@@ -254,7 +254,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                 .getTransferList()
                 .getAccountAmountsList();
 
-        return accountAmountList.contains(givingAmount) &&
+        boolean payerHasPaid = accountAmountList.stream().anyMatch(a -> a.getAccountID().equals(payingAccountID) && a.getAmount() < 0);
+        boolean amountHasBeenTransfered = accountAmountList.contains(givingAmount) &&
                 accountAmountList.contains(receivingAmount);
+
+        return amountHasBeenTransfered && payerHasPaid;
     }
 }
