@@ -62,12 +62,15 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         updateScheduleExpiryTimeSecs,
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
+                        cryptoCreate("payingAccount"),
                         scheduleCreate(
                                 "basicXfer",
                                 cryptoTransfer(
                                         tinyBarsFromTo("sender", "receiver", transferAmount)
                                 )
-                        ).via("createTx")
+                        )
+                                .payingWith("payingAccount")
+                                .via("createTx")
                 ).when(
                         scheduleSign("basicXfer").withSignatories("sender").via("signTx").hasKnownStatus(SUCCESS)
                 ).then(
@@ -99,7 +102,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                     createTx.getResponseRecord().getReceipt().getScheduleID(),
                                     triggeredTx.getResponseRecord().getScheduleRef());
 
-                            Assert.assertTrue("Wrong transfer list!", transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec), asId(DEFAULT_PAYER, spec), transferAmount));
+                            Assert.assertTrue("Wrong transfer list!", transferListCheck(triggeredTx, asId("sender", spec), asId("receiver", spec), asId("payingAccount", spec), transferAmount));
                         })
                 );
     }
