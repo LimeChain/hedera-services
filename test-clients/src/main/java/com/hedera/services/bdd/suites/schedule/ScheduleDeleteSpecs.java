@@ -130,6 +130,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     private HapiApiSpec deleteWithNoAdminKeyFails() {
         return defaultHapiSpec("DeleteWithNoAdminKeyFails")
                 .given(
+                        updateScheduleExpiryTimeSecs,
                         overriding("scheduling.whitelist", "CryptoTransfer"),
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
@@ -147,6 +148,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     private HapiApiSpec unauthorizedDeletionFails() {
         return defaultHapiSpec("UnauthorizedDeletionFails")
                 .given(
+                        updateScheduleExpiryTimeSecs,
                         overriding("scheduling.whitelist", "CryptoTransfer"),
                         newKeyNamed("admin"),
                         newKeyNamed("non-admin-key"),
@@ -168,6 +170,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     private HapiApiSpec deletingADeletedTxnFails() {
         return defaultHapiSpec("DeletingADeletedTxnFails")
                 .given(
+                        updateScheduleExpiryTimeSecs,
                         overriding("scheduling.whitelist", "CryptoTransfer"),
                         cryptoCreate("sender"),
                         cryptoCreate("receiver"),
@@ -189,7 +192,9 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
 
     private HapiApiSpec deletingNonExistingFails() {
         return defaultHapiSpec("DeletingNonExistingFails")
-                .given()
+                .given(
+                        updateScheduleExpiryTimeSecs
+                )
                 .when(
                         scheduleDelete("0.0.534")
                                 .hasKnownStatus(INVALID_SCHEDULE_ID)
@@ -200,6 +205,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     private HapiApiSpec deletingExecutedFails() {
         return defaultHapiSpec("DeletingExpiredFails")
                 .given(
+                        updateScheduleExpiryTimeSecs,
                         overriding("scheduling.whitelist", "CryptoCreate"),
                         newKeyNamed("admin"),
                         scheduleCreate("validScheduledTxn",
