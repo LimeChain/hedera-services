@@ -12,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Assert;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -72,11 +71,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                         scheduleSign("basicXfer").withSignatories("sender").via("signTx").hasKnownStatus(SUCCESS)
                 ).then(
                         withOpContext((spec, opLog) -> {
-                            var signTx = getTxnRecord("signTx");
                             var createTx = getTxnRecord("createTx");
-                            var triggeredTx = createTx.scheduled();
+                            var signTx = getTxnRecord("signTx");
+                            var triggeredTx = getTxnRecord("createTx").scheduled();
+                            allRunFor(spec, createTx, signTx, triggeredTx);
 
-                            allRunFor(spec, signTx, triggeredTx);
                             Assert.assertEquals("Wrong consensus timestamp!",
                                     signTx.getResponseRecord().getConsensusTimestamp().getNanos() + 1,
                                     triggeredTx.getResponseRecord().getConsensusTimestamp().getNanos());
@@ -204,11 +203,10 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
                                 .hasKnownStatus(SUCCESS)
                 ).then(
                         withOpContext((spec, opLog) -> {
-                            var signTx = getTxnRecord("signTx");
                             var createTx = getTxnRecord("createTx");
-                            var triggeredTx = createTx.scheduled();
-
-                            allRunFor(spec, signTx, triggeredTx);
+                            var signTx = getTxnRecord("signTx");
+                            var triggeredTx = getTxnRecord("createTx").scheduled();
+                            allRunFor(spec, createTx, signTx, triggeredTx);
 
                             Assert.assertEquals("Scheduled transaction be successful!", SUCCESS, triggeredTx.getResponseRecord().getReceipt().getStatus());
 
